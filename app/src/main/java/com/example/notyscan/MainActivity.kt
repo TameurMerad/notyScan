@@ -5,7 +5,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
+import android.nfc.Tag
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
@@ -34,21 +38,85 @@ class MainActivity : ComponentActivity() {
     private val messageText = mutableStateOf("the messsage gonna be here <3")
     private var nfcAdapter: NfcAdapter? = null
 
+
+
+
+
+
+
+    private fun enableNfc() {
+        if (!nfcAdapter?.isEnabled!!) {
+            messageText.value = "cha3l nfc"
+        } else {
+            messageText.value = "searchiiiiiiiiing"
+        }
+    }
+
+
+
+
+
+
+
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        receiveNfcMsg(intent)
+//            receiveNfcMsg(intent)
+        if (intent?.action == NfcAdapter.ACTION_TAG_DISCOVERED) {
+            val tag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
+            } else {
+                intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+            }
+            tag?.id?.let {
+                val tagValue = it.toHexString()
+                Toast.makeText(this, "NFC tag detected: $tagValue", Toast.LENGTH_SHORT).show()
+                messageText.value = tagValue
+            }
+        }
 
+
+    }
+    fun ByteArray.toHexString(): String {
+        val hexChars = "0123456789ABCDEF"
+        val result = StringBuilder(size * 2)
+
+        map { byte ->
+            val value = byte.toInt()
+            val hexChar1 = hexChars[value shr 4 and 0x0F]
+            val hexChar2 = hexChars[value and 0x0F]
+            result.append(hexChar1)
+            result.append(hexChar2)
+        }
+
+        return result.toString()
     }
 
     override fun onResume() {
         super.onResume()
-        enableForegroundDispatch(this,this.nfcAdapter)
-        receiveNfcMsg(intent)
+//        enableForegroundDispatch(this,NfcAdapter.getDefaultAdapter(this))
+//        receiveNfcMsg(intent)
+        val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        val intentFilters = arrayOf<IntentFilter>(
+            IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED),
+            IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED),
+            IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)
+        )
+        nfcAdapter.enableForegroundDispatch(this, pendingIntent, intentFilters, null)
     }
+
+
+
+
+
 
     override fun onPause() {
         super.onPause()
-        disableForegroundDispatch(this,this.nfcAdapter)
+        NfcAdapter.getDefaultAdapter(this).disableForegroundDispatch(this)
     }
 
 
@@ -60,7 +128,8 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(activity.applicationContext, activity.javaClass)
         intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
 
-        val pendingIntent = PendingIntent.getActivity(activity.applicationContext, 0, intent, 0)
+        val pendingIntent = PendingIntent.getActivity(activity.applicationContext, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE)
 
         val filters = arrayOfNulls<IntentFilter>(1)
         val techList = arrayOf<Array<String>>()
@@ -75,24 +144,29 @@ class MainActivity : ComponentActivity() {
                 throw RuntimeException("Check your MIME type")
             }
         }
-
         adapter?.enableForegroundDispatch(activity, pendingIntent, filters, techList)
     }
 
-    private fun disableForegroundDispatch(activity: ComponentActivity, adapter: NfcAdapter?) {
-        adapter?.disableForegroundDispatch(activity)
-    }
 
-     private fun receiveNfcMsg(intent: Intent?) {
-        val action = intent?.action
-        if (NfcAdapter.ACTION_NDEF_DISCOVERED == action) {
-            val parcelables = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+
+     private fun receiveNfcMsg(intent: Intent) {
+         Log.d("testdzbzb", "hhhhhhhhhhhhhhhhhhh")
+        messageText.value = "rah yssearchi"
+        val action = intent.action
+         messageText.value = "rah yssearchi2"
+
+         if (NfcAdapter.ACTION_NDEF_DISCOVERED == action) {
+
+             messageText.value = "rah yssearchi444 gae"
+
+             val parcelables = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
             with(parcelables) {
                 val inNdefMessage = this?.get(0) as NdefMessage
                 val inNdefRecords = inNdefMessage.records
                 val ndefRecord_0 = inNdefRecords[0]
 
                 val inMessage = String(ndefRecord_0.payload)
+                Log.d("testdzbzb", "hhhhhhhhhhhhhhhhhhh2")
                 messageText.value = inMessage
             }
         }
@@ -100,8 +174,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        this.nfcAdapter = NfcAdapter.getDefaultAdapter(this)?.let { it }
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 
+        enableNfc()
 
         setContent {
             NotyScanTheme {
@@ -117,9 +192,9 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Text(text = messageText.value, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                         Spacer(modifier = Modifier.height(40.dp))
-//                        Button(onClick = {}) {
-//                            Text(text = "click me ")
-//                        }
+                        Button(onClick = {onNewIntent(intent)}) {
+                            Text(text = "click me ")
+                        }
                         
                     }
 
@@ -129,6 +204,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
