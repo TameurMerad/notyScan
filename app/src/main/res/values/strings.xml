@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">notyScan</string>
+    <string name="title_activity_camera_scan">cameraScan</string>
 </resources>

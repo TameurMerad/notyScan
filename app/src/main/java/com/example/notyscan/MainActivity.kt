@@ -97,16 +97,19 @@ class MainActivity : ComponentActivity() {
 //        enableForegroundDispatch(this,NfcAdapter.getDefaultAdapter(this))
 //        receiveNfcMsg(intent)
         val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE
-        )
-        val intentFilters = arrayOf<IntentFilter>(
-            IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED),
-            IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED),
-            IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)
-        )
-        nfcAdapter.enableForegroundDispatch(this, pendingIntent, intentFilters, null)
+        if (nfcAdapter != null ){
+            val pendingIntent = PendingIntent.getActivity(
+                this, 0, Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_IMMUTABLE
+            )
+            val intentFilters = arrayOf<IntentFilter>(
+                IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED),
+                IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED),
+                IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)
+            )
+            nfcAdapter.enableForegroundDispatch(this, pendingIntent, intentFilters, null)
+        }
+
     }
 
 
@@ -116,7 +119,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        NfcAdapter.getDefaultAdapter(this).disableForegroundDispatch(this)
+        val nfcAdapter = NfcAdapter.getDefaultAdapter(this)
+        nfcAdapter?.disableForegroundDispatch(this)
     }
 
 
@@ -176,7 +180,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         nfcAdapter = NfcAdapter.getDefaultAdapter(this)
 
-        enableNfc()
+//        enableNfc()
 
         setContent {
             NotyScanTheme {
@@ -192,7 +196,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Text(text = messageText.value, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                         Spacer(modifier = Modifier.height(40.dp))
-                        Button(onClick = {onNewIntent(intent)}) {
+                        Button(onClick = {startActivity(Intent(this@MainActivity, cameraScan::class.java))}) {
                             Text(text = "click me ")
                         }
                         
