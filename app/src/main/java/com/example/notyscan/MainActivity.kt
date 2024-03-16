@@ -197,7 +197,11 @@ class MainActivity : ComponentActivity() {
                         Text(text = messageText.value, Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                         Spacer(modifier = Modifier.height(40.dp))
                         Button(onClick = {startActivity(Intent(this@MainActivity, cameraScan::class.java))}) {
-                            Text(text = "click me ")
+                            Text(text = "open Camera")
+                        }
+                        Spacer(modifier = Modifier.height(40.dp))
+                        Button(onClick = {startActivity(Intent(this@MainActivity, textReco::class.java))}) {
+                            Text(text = "openScanner")
                         }
                         
                     }
