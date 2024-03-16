@@ -1,6 +1,7 @@
 package com.example.notyscan
 
 import android.app.Activity
+import android.content.ContentResolver
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,6 +40,8 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.RESULT_
 import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions.SCANNER_MODE_FULL
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
+import java.io.File
+import java.io.FileOutputStream
 
 class textReco : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,13 +67,23 @@ class textReco : ComponentActivity() {
                         val result = GmsDocumentScanningResult.fromActivityResultIntent(it.data)
                         if (result != null) {
                             imageUris = result.pages?.map { it.imageUri } ?: emptyList()
+                            result.pdf?.let {pdf ->
+                                val fos = FileOutputStream(File(filesDir,"scan.pdf"))
+                                contentResolver.openInputStream(pdf.uri)?.use {cR ->
+                                    cR.copyTo(fos)
+                                }
+
+                            }
+
                         }
 
                     }
                 }
 
                 Column(
-                    Modifier.fillMaxSize(),
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -104,59 +119,3 @@ class textReco : ComponentActivity() {
     }
 }
 
-@Preview
-@Composable
-fun ScannerPreview () {
-    val options = GmsDocumentScannerOptions.Builder()
-        .setScannerMode(SCANNER_MODE_FULL)
-        .setResultFormats(RESULT_FORMAT_JPEG, RESULT_FORMAT_PDF)
-        .setGalleryImportAllowed(true)
-        .setPageLimit(5)
-        .build()
-    val context = LocalContext.current
-    val scanner = GmsDocumentScanning.getClient(options)
-    var imageUris by remember{ mutableStateOf<List<Uri>>(emptyList()) }
-    val scannerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult()
-    ) {
-        if (it.resultCode == ComponentActivity.RESULT_OK) {
-            val result = GmsDocumentScanningResult.fromActivityResultIntent(it.data)
-            if (result != null) {
-                imageUris = result.pages?.map { it.imageUri } ?: emptyList()
-            }
-
-        }
-    }
-
-    Column(
-        Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        imageUris.forEach {
-            AsyncImage(
-                model = it, contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(onClick = {
-                scanner.getStartScanIntent(context as Activity)
-                    .addOnSuccessListener { intentSender ->
-                        scannerLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
-
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(context,"cannt scan",Toast.LENGTH_SHORT).show()
-                        Log.e("scanErr", it.message.toString() )
-                    }
-            }) {
-                Text(text = "Scan")
-            }
-
-        }
-
-
-
-    }
-}g
