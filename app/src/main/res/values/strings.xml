@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">notyScan</string>
     <string name="title_activity_camera_scan">cameraScan</string>
+    <string name="title_activity_text_reco">textReco</string>
 </resources>
